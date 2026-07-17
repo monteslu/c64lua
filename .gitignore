@@ -1,0 +1,14 @@
+node_modules/
+*.prg
+*.d64
+*.o
+*.s.bak
+*.map
+*.lbl
+*.dbg
+viceshot.mjs
+examples/**/*.prg
+examples/**/*.d64
+examples/**/*.c
+examples/**/*.map
+!examples/**/main.lua
