@@ -5,7 +5,7 @@
 // unlike the NES. There is no gt.* namespace (that's a GameTank escape hatch):
 // passing no `members` table makes any `gt.x(...)` call a clear platform error.
 //
-// The `c` field carries the gtlua-schema symbol name (gt_p8_* / gt_*); the
+// The `c` field carries the luacretro schema symbol name (lc_*); the
 // luacretro c64 seam rewrites those to c64_* at the call site (cName) and in a
 // final pass, so this table stays in the shared shape. Param kinds:
 //   coord - pixel coordinate/radius: C int; fixed args floored (>>16)
@@ -17,30 +17,30 @@
 
 export const BUILTINS = {
   // ---- graphics (CPU-rendered into the multicolor bitmap, any time) --------
-  cls:      { params: [["color", true]], ret: "void", c: "gt_p8_cls" },
-  camera:   { params: [["coord", true], ["coord", true]], ret: "void", c: "gt_p8_camera" },
-  color:    { params: [["color", false]], ret: "void", c: "gt_p8_color" },
-  pset:     { params: [["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_pset" },
-  rect:     { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_rect" },
-  rectfill: { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_rectfill" },
-  circ:     { params: [["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_circ" },
-  circfill: { params: [["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_circfill" },
-  line:     { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "gt_p8_line" },
-  pget:     { params: [["coord", false], ["coord", false]], ret: "int", c: "gt_p8_pget" },
+  cls:      { params: [["color", true]], ret: "void", c: "lc_cls" },
+  camera:   { params: [["coord", true], ["coord", true]], ret: "void", c: "lc_camera" },
+  color:    { params: [["color", false]], ret: "void", c: "lc_color" },
+  pset:     { params: [["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_pset" },
+  rect:     { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_rect" },
+  rectfill: { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_rectfill" },
+  circ:     { params: [["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_circ" },
+  circfill: { params: [["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_circfill" },
+  line:     { params: [["coord", false], ["coord", false], ["coord", false], ["coord", false], ["color", true]], ret: "void", c: "lc_line" },
+  pget:     { params: [["coord", false], ["coord", false]], ret: "int", c: "lc_pget" },
   // spr(n, x, y, [w], [h], [flip_x], [flip_y]): entities 0-7 ride hardware MOB
   // sprites (fast, free sub-cell movement); entities 8+ fall back to a software
   // blit into the bitmap. See docs/DIFFERENCES.md.
-  spr:      { params: [["int", false], ["coord", false], ["coord", false], ["int", true], ["int", true], ["flip", true], ["flip", true]], ret: "void", c: "gt_p8_spr" },
+  spr:      { params: [["int", false], ["coord", false], ["coord", false], ["int", true], ["int", true], ["flip", true], ["flip", true]], ret: "void", c: "lc_spr" },
   print: { params: [], ret: "int", special: "print" },
 
   // ---- input (joystick port 2 = P1; btn(5) = SPACE on real hardware) -------
-  btn:      { params: [["int", false], ["int", true]], ret: "bool", c: "gt_p8_btn" },
-  btnp:     { params: [["int", false], ["int", true]], ret: "bool", c: "gt_p8_btnp" },
+  btn:      { params: [["int", false], ["int", true]], ret: "bool", c: "lc_btn" },
+  btnp:     { params: [["int", false], ["int", true]], ret: "bool", c: "lc_btnp" },
 
   // ---- sound (SID; hardware ADSR envelopes) --------------------------------
   // sfx(n, [ch]) fires compiled effect n on a SID voice; `audio` links the
   // SID driver at build time.
-  sfx:   { params: [["int", false], ["int", true]], ret: "void", c: "gt_sfx", audio: true },
+  sfx:   { params: [["int", false], ["int", true]], ret: "void", c: "lc_sfx", audio: true },
 
   // ---- math (16.16 fixed point, PICO-8 semantics) --------------------------
   flr:   { params: [["num", false]], ret: "int", c: null, special: "flr" },
@@ -50,10 +50,10 @@ export const BUILTINS = {
   min:   { params: [["num", false], ["num", true]], ret: "same", c: null, special: "min" },
   max:   { params: [["num", false], ["num", true]], ret: "same", c: null, special: "max" },
   mid:   { params: [["num", false], ["num", false], ["num", false]], ret: "same", c: null, special: "mid" },
-  sqrt:  { params: [["num", false]], ret: "fixed", c: "gt_fsqrt" },
-  sin:   { params: [["num", false]], ret: "fixed", c: "gt_fsin" },
-  cos:   { params: [["num", false]], ret: "fixed", c: "gt_fcos" },
-  atan2: { params: [["num", false], ["num", false]], ret: "fixed", c: "gt_fatan2" },
+  sqrt:  { params: [["num", false]], ret: "fixed", c: "lc_fsqrt" },
+  sin:   { params: [["num", false]], ret: "fixed", c: "lc_fsin" },
+  cos:   { params: [["num", false]], ret: "fixed", c: "lc_fcos" },
+  atan2: { params: [["num", false], ["num", false]], ret: "fixed", c: "lc_fatan2" },
 
   band:  { params: [["num", false], ["num", false]], ret: "same", c: null, special: "bitop", op: "&" },
   bor:   { params: [["num", false], ["num", false]], ret: "same", c: null, special: "bitop", op: "|" },
@@ -62,10 +62,10 @@ export const BUILTINS = {
   shl:   { params: [["num", false], ["num", false]], ret: "same", c: null, special: "bitop", op: "<<" },
   shr:   { params: [["num", false], ["num", false]], ret: "same", c: null, special: "bitop", op: ">>" },
   lshr:  { params: [["num", false], ["num", false]], ret: "same", c: null, special: "bitop", op: ">>>" },
-  rnd:   { params: [["num", true]], ret: "fixed", c: "gt_p8_rnd" },
-  srand: { params: [["num", false]], ret: "void", c: "gt_p8_srand" },
-  t:     { params: [], ret: "fixed", c: "gt_p8_time", isValue: false },
-  time:  { params: [], ret: "fixed", c: "gt_p8_time" },
+  rnd:   { params: [["num", true]], ret: "fixed", c: "lc_rnd" },
+  srand: { params: [["num", false]], ret: "void", c: "lc_srand" },
+  t:     { params: [], ret: "fixed", c: "lc_time", isValue: false },
+  time:  { params: [], ret: "fixed", c: "lc_time" },
 
   // ---- data structures (roomy on the C64's 64KB flat RAM) ------------------
   array:  { params: [["int", false], ["num", true]], ret: "array", special: "array" },

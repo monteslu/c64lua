@@ -67,7 +67,7 @@ test("btn/btnp compile (CIA1 joystick); no zp-fastcall inlining on c64 v1", () =
 test("user functions get real C params (no zp-fastcall on c64 v1)", () => {
   const out = c(`function add(a,b) return a+b end\nfunction _update() local z=add(1,2) end\nfunction _draw() end`);
   // real int params, not a (void) zp-fastcall signature
-  assert.match(out, /gtl_add\(int /);
+  assert.match(out, /lcl_add\(int /);
 });
 
 test("c64 palette: P8_TO_C64 is 16 valid indices; nearestColorIndex is 0-15", () => {
