@@ -95,7 +95,10 @@ npx c64lua build mygame/main.lua -o game.prg --d64 game.d64
   autostart 1541 disk image (`LOAD"*",8,1 : RUN`, the format the C64 Ultimate
   and the demo scene load).
 - `npx c64lua run mygame/main.lua` builds and plays it in a window over the
-  bundled VICE core (needs the optional `@kmamal/sdl`, pulled by `npm install`).
+  bundled VICE core, through the shared
+  [`romdev-core-runner`](https://www.npmjs.com/package/romdev-core-runner) SDL
+  host (the same one the whole SDK family and the romdev playtest tool use). The
+  window needs `@kmamal/sdl`, an *optional* dependency of the runner.
 
 **Requirements:** [Node.js](https://nodejs.org/) **24+**, and nothing else -
 `npm install` brings the cc65 toolchain (compiler + `c64.lib` + linker config)
