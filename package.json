@@ -26,5 +26,41 @@
   },
   "scripts": {
     "test": "node --test 'test/**/*.test.js'"
+  },
+  "keywords": [
+    "lua",
+    "pico-8",
+    "pico8",
+    "gamedev",
+    "game-development",
+    "retro",
+    "retrogaming",
+    "homebrew",
+    "rom",
+    "wasm",
+    "webassembly",
+    "ahead-of-time",
+    "aot",
+    "c64",
+    "commodore-64",
+    "commodore",
+    "6502",
+    "6510",
+    "vice",
+    "sid",
+    "cc65",
+    "8-bit",
+    "prg",
+    "d64",
+    "c64-ultimate",
+    "demoscene"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monteslu/c64lua.git"
+  },
+  "homepage": "https://github.com/monteslu/c64lua#readme",
+  "bugs": {
+    "url": "https://github.com/monteslu/c64lua/issues"
   }
 }
