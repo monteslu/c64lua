@@ -76,20 +76,36 @@ roughly **17-20k CPU cycles per frame**. There is no blitter. Numbers:
 | **rectfill** aligned span | ~1 byte-store per 4 canvas px (+ 1 cell-slot alloc/cell) | a full-screen fill is still multi-frame |
 | **hardware sprite** `spr(0..7)` | a handful of register writes | free sub-cell movement, no per-cell cost |
 
-**The honest framing:** a full-screen redraw every frame is not a 60fps
-proposition on a 1MHz CPU with no blitter. Design accordingly:
+**The runtime is DOUBLE-BUFFERED** (VIC-II bank flip, [DIFFERENCES.md](DIFFERENCES.md)):
+you draw into a hidden buffer and it's shown only once the frame is complete.
+So clearing and redrawing the whole screen every frame is **correct and
+tear-free** — the normal game-engine model. What the double buffer does NOT do
+is make a full-screen software redraw *fast*: at ~1MHz with no blitter it just
+runs below 60fps. The fix removes TEARING, not the speed ceiling.
 
-- **Static scenes** (menus, title art, this repo's `hello`/`plasma`/`mathcheck`)
-  draw once in `_init` and simply persist — the bitmap is RAM, it stays.
+**Measured** (VICE, PAL 50Hz): the `plasma` example — a full 160x200 cls +
+~100 `rectfill` bands + text, redrawn every frame — runs at **~1.3 fps**
+(~30-something host frames per game frame). A lighter full-frame scene like
+`hello` (cls + a filled disc + text) lands in the same low-single-digit-fps
+range. Every frame you see is a *complete* frame; it just advances slower than
+60Hz. That's honest C64 speed.
+
+Design accordingly:
+
+- **Clear + redraw every frame** is fine and tear-free — just know a *full*
+  160x200 repaint is low-single-digit fps. Great for menus, title art, slow
+  effects, turn-based/puzzle games.
 - **Entities** ride the 8 **hardware sprites** (`spr(0..7)`) — they move freely
-  over a static or slowly-changing bitmap at zero per-frame draw cost.
+  over a static or slowly-changing bitmap at zero per-frame draw cost. This is
+  how you get 60fps action on a real C64.
 - **Partial redraw** — clear and repaint only the dirty region, not the whole
-  screen.
+  screen — buys the most headroom when you need a moving software layer.
 - **30fps** (`_update` instead of `_update60`) buys roughly double the per-frame
   draw budget.
 
-> Why `cls` isn't 1-frame: clearing 8000 bitmap bytes at ~5 cycles/byte is
-> ~40k cycles ≈ 2 frames on its own — the theoretical floor for a straightforward
-> clear. A true 1-frame clear needs the stack-sweep (`pha`) trick, which only
-> reaches stack-addressable RAM; it's a tracked v2 lever, not a v1 promise. This
-> is measured and published up front rather than discovered in a game.
+> Measure your own loop: build with `--bench` and read the game-loop counter the
+> runtime bumps each frame, then divide host frames by it. The full-screen `cls`
+> alone (8000 bitmap bytes + 1000 screen + 1000 color) is ~55k cycles ≈ several
+> frames — the dominant cost of any full repaint. A true 1-frame clear would need
+> a stack-sweep (`pha`) trick reaching only stack-addressable RAM; it's a tracked
+> v2 lever, not a v1 promise. Published up front rather than discovered in a game.

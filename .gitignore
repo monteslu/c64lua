@@ -12,3 +12,4 @@ examples/**/*.d64
 examples/**/*.c
 examples/**/*.map
 !examples/**/main.lua
+.build/

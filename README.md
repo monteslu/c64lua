@@ -15,16 +15,15 @@ and the homebrew/demo scene load. No interpreter, no VM: your Lua becomes native
 ## Your first game
 
 This is a complete C64 game. No assets, no boilerplate - one `main.lua`.
-`_draw()` runs every frame; this scene is static, so we draw it once and skip
-the rest (redrawing a full 160x200 bitmap every frame is too slow at ~1 MHz -
-see the perf model in [docs/CHEATSHEET.md](docs/CHEATSHEET.md)):
+`_draw()` runs every frame and clears + redraws the whole scene - the normal
+game-engine model. The runtime is **double-buffered** (you draw into a hidden
+buffer that's shown only once it's complete), so a full-screen redraw every
+frame is correct and tear-free. A full 160x200 cls+redraw runs *below* 60fps at
+~1 MHz - that's honest C64 speed, not tearing (see the perf model in
+[docs/CHEATSHEET.md](docs/CHEATSHEET.md)):
 
 ```lua
-local drawn = 0
-
-function _draw()                  -- runs every frame
-  if (drawn == 1) then return end -- static scene: draw it just once
-  drawn = 1
+function _draw()                  -- runs every frame: clear + redraw
   cls(0)                          -- black background
   circfill(80, 96, 22, 10)        -- head: a yellow circle
   circfill(74, 90, 3, 0)          -- left eye: black

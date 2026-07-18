@@ -3,7 +3,9 @@
 -- family shares (flr, division, modulo, sqrt, sin). A visual self-test:
 -- read the numbers against the comments to confirm the math core is correct.
 
-function _init()
+-- Drawn every frame in _draw() (the runtime is double-buffered, so a full
+-- cls+redraw each frame is correct and tear-free - the normal game-engine model).
+function _draw()
   cls(0)
   print("mathcheck", 50, 8, 7)
 
@@ -21,5 +23,3 @@ function _init()
   -- fixed multiply
   print(flr(1.5 * 4),      20, 126, 10)  -- 6
 end
-
-function _draw() end

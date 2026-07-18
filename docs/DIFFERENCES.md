@@ -69,11 +69,37 @@ Build with `--dev` (`-DC64_DEV`) and every eviction **flashes the border red**
 for that frame and bumps a `c64_clash_count`. Watch the border while you draw:
 a flashing border means a region is over its color budget.
 
-## 3. Performance is a budget, not a given
+## 3. Double-buffered framebuffer (draw every frame, no tearing)
 
-The C64 is ~1MHz with no blitter — the slowest pixel-pusher in the family. A
-full-screen redraw every frame is not a 60fps proposition. See the measured
-numbers and the design patterns (static scenes, hardware sprites, partial
-redraw, 30fps) in [CHEATSHEET.md](CHEATSHEET.md#performance-model-measured--budget-before-you-promise).
-The `plasma` example is a *static* full-screen paint (drawn once) precisely
-because a live per-frame plasma would be seconds-per-frame at 1MHz.
+The runtime is **double-buffered**. There are two full framebuffers — buffer A
+in VIC bank 3 (`$C000` screen / `$E000` bitmap) and buffer B in VIC bank 2
+(`$8000` screen / `$A000` bitmap) — and each frame the runtime **flips which one
+the VIC-II displays** (a single CIA2 bank-select write, off the visible area).
+Your `_draw` always renders into the *hidden* buffer; `c64_endframe` shows it
+once it's complete and swaps. So you `cls()` and redraw the whole scene **every
+frame** like any normal game engine, and you **never see a half-drawn frame** —
+no tearing.
+
+Two caveats, both fine under a full per-frame redraw:
+
+- **Shared color RAM.** The C64's color RAM (`$D800`, the per-cell "11" nibble)
+  is fixed hardware — there's only one, shared by both buffers. Because every
+  frame is a full `cls` + redraw, the allocator rewrites it each frame, so the
+  two buffers never disagree. (If you tried to persist one buffer and only
+  partially redraw the other, the shared color RAM could bleed between them.)
+- **Buffer B's bitmap under BASIC ROM.** Buffer B's bitmap (`$A000-$BFFF`) sits
+  under the BASIC ROM. The VIC shows the RAM there, and the draw primitives
+  write whole bytes for filled spans, so the framebuffer is correct; this is why
+  BASIC is left mapped (banking it out to make per-pixel read-modify-write read
+  RAM tripped VICE's disk-autostart and reset the machine).
+
+## 4. Performance is a budget, not a given
+
+The C64 is ~1MHz with no blitter — the slowest pixel-pusher in the family.
+Double-buffering makes a full-screen redraw every frame **correct and tear-free**,
+but it does not make it *fast*: a full 160x200 cls+redraw runs at low-single-digit
+fps (the `plasma` example measures **~1.3 fps**). See the measured numbers and the
+design patterns (hardware sprites, partial redraw, 30fps) in
+[CHEATSHEET.md](CHEATSHEET.md#performance-model-measured--budget-before-you-promise).
+The `plasma` example is a live, animated full-screen paint (redrawn every frame)
+— honest, if slow, C64 software rendering with no tearing.

@@ -1,9 +1,12 @@
 -- hello: a centered smiley + centered text (the c64lua "it works" cart).
 -- Canvas is 160x200 (VIC-II multicolor bitmap). Center is (80,100).
 --
--- The scene is drawn ONCE in _init: the C64 is ~1MHz with no blitter, so a
--- full-screen redraw every frame is expensive (see docs/CHEATSHEET.md perf
--- model). A static picture like this is drawn once and simply displayed.
+-- The runtime is DOUBLE-BUFFERED: you draw into a hidden buffer and the frame
+-- is shown only once it's complete, so cls+redraw EVERY frame is correct and
+-- tear-free. That's the normal game-engine model. This scene is static, but we
+-- still redraw it every frame in a plain _draw() to prove the point (a full
+-- 160x200 redraw runs below 60fps at ~1MHz - honest C64 speed, not tearing;
+-- see docs/CHEATSHEET.md for the perf model).
 --
 -- ROUND ON SCREEN: the multicolor pixel is 2:1 (double-wide), so a plain
 -- circfill reads as an oval. `disc` below draws a midpoint circle (integer
@@ -33,14 +36,9 @@ function disc(cx, cy, r, col)
   end
 end
 
--- _draw() runs every frame. This scene is static, so we draw it once behind a
--- guard: re-drawing a full 160x200 bitmap every frame is too slow at ~1 MHz and
--- would tear (you'd see it mid-redraw). Draw once, let it hold.
-local drawn = 0
-
+-- _draw() runs every frame and clears + redraws the whole scene. No guard, no
+-- draw-once: the double buffer makes a full per-frame redraw the right thing.
 function _draw()
-  if (drawn == 1) then return end
-  drawn = 1
   cls(0)                       -- black background
   -- NOTE: colors are passed as RAW C64 indices here (7=yellow, 6=blue, 0=black),
   -- NOT PICO-8 indices. The P8->C64 bake only fires on a color LITERAL handed

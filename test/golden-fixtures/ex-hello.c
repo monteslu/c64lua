@@ -4,8 +4,6 @@
 static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col);
 static void lcl__draw(void);
 
-int lcl_drawn = 0;
-
 static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col)
 {
     { int lcl_x = lcl_r;
@@ -31,10 +29,6 @@ static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col)
 
 static void lcl__draw(void)
 {
-    if ((lcl_drawn == 1)) {
-        return;
-    }
-    lcl_drawn = 1;
     c64_cls(0);
     lcl_disc(80, 96, 22, 7);
     lcl_disc(74, 89, 3, 0);
