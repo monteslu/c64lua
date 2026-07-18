@@ -32,14 +32,17 @@ static void lcl__init(void)
 {
     c64_cls(0);
     lcl_disc(80, 96, 22, 7);
-    lcl_disc(72, 92, 5, 6);
-    lcl_disc(88, 92, 5, 6);
-    { int lcl_i = (-8);
-        while ((lcl_i <= 8)) {
-            c64_pset((80 + lcl_i), (106 - (int)(c64_fdiv(((long)(lcl_i * lcl_i) << 16), 786432L) >> 16)), 12);
-            lcl_i = (lcl_i + 1);
+    lcl_disc(74, 89, 3, 0);
+    lcl_disc(86, 89, 3, 0);
+    { int lcl_i = (-9);
+        while ((lcl_i <= 9)) {
+            { int lcl_y = (104 - (int)(c64_fdiv(((long)(lcl_i * lcl_i) << 16), 720896L) >> 16));
+                c64_pset((80 + lcl_i), lcl_y, 0);
+                c64_pset((80 + lcl_i), (lcl_y + 1), 0);
+                lcl_i = (lcl_i + 1);
+            }
         }
-        c64_print("hello c64", 58, 132, 1);
+        c64_print("hello c64", 58, 134, 1);
     }
 }
 
