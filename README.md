@@ -6,10 +6,11 @@ Write PICO-8-flavored Lua, get a Commodore 64 `.prg` / `.d64`.
 
 c64lua is the Commodore 64 member of the **luacretro** family of Lua-to-C
 console SDKs (alongside gtlua/GameTank, gbalua/Game Boy Advance, mdlua/Genesis).
-You write a small PICO-8-shaped Lua game; c64lua compiles it to C, then to a
-6502 `.prg` with the bundled cc65 toolchain, and wraps it into an autostart
-`.d64` disk image, the format the new **Commodore 64 Ultimate** hardware and the
-homebrew/demo scene load. No native compiler or emulator to install.
+You write a small PICO-8-shaped Lua game; c64lua **ahead-of-time compiles** it to
+C, then to a 6502 `.prg` with the bundled cc65 toolchain, and wraps it into an
+autostart `.d64` disk image, the format the new **Commodore 64 Ultimate** hardware
+and the homebrew/demo scene load. No interpreter, no VM: your Lua becomes native
+6502 machine code. No native compiler or emulator to install, either.
 
 ```lua
 function _init()
