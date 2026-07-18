@@ -1,0 +1,32 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      # Gate A: generated C is byte-identical to the committed goldens, and the
+      # c64 target seam behaves as the SDK expects.
+      - run: node test/golden-c.mjs check
+      - run: npm test
+      # Gate B: every example compiles to a .prg and wraps to a .d64 with the
+      # bundled cc65 WASM toolchain (no native tools). (Emulator run/verify is a
+      # local romdev-MCP step, not CI.)
+      - name: build all examples to .prg + .d64
+        run: |
+          for ex in examples/*/main.lua; do
+            dir=$(dirname "$ex")
+            name=$(basename "$dir")
+            node bin/c64lua.js build "$ex" -o "/tmp/$name.prg" --d64 "/tmp/$name.d64"
+            test -f "/tmp/$name.prg" || { echo "no .prg for $name"; exit 1; }
+            test "$(stat -c%s "/tmp/$name.d64")" = "174848" || { echo "bad .d64 size for $name"; exit 1; }
+          done
