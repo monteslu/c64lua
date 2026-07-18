@@ -1,6 +1,6 @@
 {
   "name": "c64lua",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Write PICO-8-flavored Lua, get a Commodore 64 .prg / .d64. The C64 member of the luacretro Lua-to-C console SDK family.",
   "type": "module",
   "license": "MIT",
