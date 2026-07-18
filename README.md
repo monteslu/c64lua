@@ -1,5 +1,7 @@
 # c64lua
 
+[![npm version](https://img.shields.io/npm/v/c64lua.svg)](https://www.npmjs.com/package/c64lua) [![npm downloads](https://img.shields.io/npm/dm/c64lua.svg)](https://www.npmjs.com/package/c64lua)
+
 Write PICO-8-flavored Lua, get a Commodore 64 `.prg` / `.d64`.
 
 c64lua is the Commodore 64 member of the **luacretro** family of Lua-to-C
