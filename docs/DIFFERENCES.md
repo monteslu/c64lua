@@ -19,19 +19,23 @@ color-first: 4 colors per cell (multicolor) halves attribute clash versus 2
 
 ### What this means for circles
 
-A canvas circle of radius `r` is `r` tall but reads **~2:1 wide** on screen
-(each x-pixel is double-wide). c64lua draws `circ()`/`circfill()` in **canvas
-coordinates** — the radius is a canvas radius — so circles come out wider than
-tall on the display:
+`circ()`/`circfill()` draw a true circle in **canvas coordinates** — the radius
+is a canvas radius — so a `circfill(x, y, r)` is `r` tall but reads **~2:1 wide**
+on screen (each x-pixel is double-wide). That's the honest raw behavior, and it's
+a deliberate choice: `pset`, `rect`, `circ`, and `spr` all share ONE coordinate
+system (the 160 x 200 canvas), so `pset(x,y)` and `circ(x,y,r)` mean the same
+`x`. Pre-squashing circle x-extent inside the runtime would make circle
+coordinates inconsistent with every other verb and pull in the float library.
 
-![hello — the smiley reads a touch wide](../examples/hello/screenshot.png)
+**Want a disc that's round on screen?** Halve each horizontal span's x-extent —
+an integer, float-free technique. The `hello` example ships a small `disc()`
+helper that does exactly this, which is why its smiley reads round:
 
-This is a deliberate choice: `pset`, `rect`, `circ`, and `spr` all share ONE
-coordinate system (the 160 x 200 canvas), so `pset(x,y)` and `circ(x,y,r)` mean
-the same `x`. The alternative — pre-squashing circles' x-extent to look round —
-would make circle coordinates inconsistent with every other verb and pull in the
-float library. If you want a round-on-screen disc, draw with a doubled y-radius
-or use a hardware sprite. The fat-pixel aspect is the honest C64 look.
+![hello — a round-on-screen smiley](../examples/hello/screenshot.png)
+
+So: `circfill` gives you an honest canvas circle (2:1 on screen); the `disc`
+pattern in `examples/hello/main.lua` gives you a round-on-screen one. Both are a
+few lines and neither touches the float library.
 
 ## 2. Per-cell attribute clash (the one graphics catch)
 
