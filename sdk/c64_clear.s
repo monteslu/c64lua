@@ -16,17 +16,24 @@
 
 .segment "CODE"
 
-; void c64_screen_clear(unsigned char byteval);  fill screen RAM $C000-$C3FF
-; (1024 bytes; the 40x25=1000 cell color-pair nibbles + a little slack). A=byte.
+; void c64_screen_clear(unsigned char byteval);  fill the 1000 color-pair cells
+; $C000-$C3E7 ONLY. The last 24 bytes ($C3E8-$C3FF) are left intact because the
+; 8 sprite pointers live at $C3F8-$C3FF - clearing them would blank every MOB
+; on each cls. A=byte. Pages $C000/$C100/$C200 full (768), then $C300-$C3E7 (232).
 .proc _c64_screen_clear
         ldy     #0
 sloop:
         sta     $C000,y
         sta     $C100,y
         sta     $C200,y
-        sta     $C300,y
         iny
         bne     sloop
+        ldy     #0
+sloop2:
+        sta     $C300,y
+        iny
+        cpy     #$E8            ; stop at $C3E8 (leave $C3E8-$C3FF alone)
+        bne     sloop2
         rts
 .endproc
 

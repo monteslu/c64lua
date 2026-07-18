@@ -132,6 +132,18 @@ void c64_init(void) {
     bg_color = 0;
 
     c64_cls(0);
+
+    /* default MOB sprite data: a solid 24x21 square at $C800 (bank 3), pointer
+     * value ($C800-$C000)/64 = 32. All 8 sprite pointers ($C3F8-$C3FF) point at
+     * it, so spr(n,...) shows a solid block until a sheet importer supplies art.
+     * Set AFTER cls (screen_clear preserves $C3E8-$C3FF, so pointers survive
+     * every later cls too). */
+    {
+        unsigned char *sd = (unsigned char *)0xC800;
+        for (i = 0; i < 63; ++i) sd[i] = 0xFF;
+        for (i = 0; i < 8; ++i) POKE(0xC3F8 + i) = 32;
+    }
+    POKE(0xD015) = 0;                 /* all sprites disabled until spr() enables */
 }
 
 void c64_p8_fps30(void) { /* frame pacing is a raster poll; 30fps = caller loop */ }
@@ -142,6 +154,13 @@ void c64_endframe(void) {
     while (POKE(0xD012) < 250) { }
     while (POKE(0xD012) >= 250) { }
     c64_time_tick();
+#ifdef C64_BENCH
+    /* bench: a game-loop counter in color RAM $DBFF (last cell, off-screen). One
+     * increment per completed _update/_draw/endframe cycle. Read it via
+     * memory({region:'c64_color_ram', offset:0x3FF}) and divide host frames by
+     * it to get frames-per-loop = the per-frame draw cost. */
+    POKE(0xDBFF) = (unsigned char)(POKE(0xDBFF) + 1);
+#endif
 #ifdef C64_DEV
     POKE(VIC_BORDER) = 0;             /* clear the clash-flash each frame */
 #endif
@@ -234,8 +253,28 @@ void c64_rectfill(int x0, int y0, int x1, int y1, int c) {
     if (y0 > y1) { t = y0; y0 = y1; y1 = t; }
     if (x0 < 0) x0 = 0; if (y0 < 0) y0 = 0;
     if (x1 >= C64_W) x1 = C64_W - 1; if (y1 >= C64_H) y1 = C64_H - 1;
-    for (y = y0; y <= y1; ++y)
-        for (x = x0; x <= x1; ++x) plot(x, y, cur_color);
+    /* Fast path: a span of 4 canvas pixels aligned to x&3==0 is one whole
+     * bitmap BYTE (all 4 pixels share the 2-bit slot code). We allocate the
+     * cell's slot ONCE and write the byte = slot*0x55, ~4x fewer stores than
+     * per-pixel plot(). Ragged left/right edges fall back to plot(). */
+    for (y = y0; y <= y1; ++y) {
+        unsigned char cr = (unsigned char)(y >> 3);
+        unsigned char yl = (unsigned char)(y & 7);
+        x = x0;
+        /* left ragged edge up to a 4-pixel boundary */
+        while (x <= x1 && (x & 3) != 0) { plot(x, y, cur_color); x++; }
+        /* whole-byte middle */
+        while (x + 3 <= x1) {
+            unsigned char cc = (unsigned char)(x >> 2);
+            unsigned char slot = cell_slot(cc, cr, cur_color);
+            unsigned int off = cellrow_off[cr] + (unsigned int)cc * 8 + yl;
+            /* fill byte: every pixel = slot. slot 0->0x00,1->0x55,2->0xAA,3->0xFF */
+            bitmap[off] = (unsigned char)(slot * 0x55);
+            x += 4;
+        }
+        /* right ragged edge */
+        while (x <= x1) { plot(x, y, cur_color); x++; }
+    }
 }
 
 /* midpoint circle; circfill draws horizontal spans */
