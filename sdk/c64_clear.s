@@ -11,6 +11,8 @@
 
 .export _c64_bitmap_clear
 .export _c64_screen_clear
+.export _c64_bitmap_clear_b
+.export _c64_screen_clear_b
 .export _c64_color_clear
 .export _c64_irq_off
 
@@ -33,6 +35,26 @@ sloop2:
         sta     $C300,y
         iny
         cpy     #$E8            ; stop at $C3E8 (leave $C3E8-$C3FF alone)
+        bne     sloop2
+        rts
+.endproc
+
+; void c64_screen_clear_b(unsigned char byteval);  buffer B screen at $8000
+; (VIC bank 2). Fill $8000-$83E7 (1000 cells), leaving $83E8-$43FF for the
+; sprite pointers ($83F8).
+.proc _c64_screen_clear_b
+        ldy     #0
+sloop:
+        sta     $8000,y
+        sta     $8100,y
+        sta     $8200,y
+        iny
+        bne     sloop
+        ldy     #0
+sloop2:
+        sta     $8300,y
+        iny
+        cpy     #$E8            ; stop at $83E8 (leave $83E8-$43FF alone)
         bne     sloop2
         rts
 .endproc
@@ -93,6 +115,53 @@ tail:
         sta     $FF00,y
         dey
         bpl     tail
+        rts
+.endproc
+
+; buffer B bitmap at $A000-$BF3F (VIC bank 2). Clear $A000-$BE00 (31
+; full pages = 7936 bytes) then $BF00-$BF3F (64 bytes) = 8000 exactly, matching
+; buffer A.
+.proc _c64_bitmap_clear_b
+        ldy     #0
+loopb:
+        sta     $A000,y
+        sta     $A100,y
+        sta     $A200,y
+        sta     $A300,y
+        sta     $A400,y
+        sta     $A500,y
+        sta     $A600,y
+        sta     $A700,y
+        sta     $A800,y
+        sta     $A900,y
+        sta     $AA00,y
+        sta     $AB00,y
+        sta     $AC00,y
+        sta     $AD00,y
+        sta     $AE00,y
+        sta     $AF00,y
+        sta     $B000,y
+        sta     $B100,y
+        sta     $B200,y
+        sta     $B300,y
+        sta     $B400,y
+        sta     $B500,y
+        sta     $B600,y
+        sta     $B700,y
+        sta     $B800,y
+        sta     $B900,y
+        sta     $BA00,y
+        sta     $BB00,y
+        sta     $BC00,y
+        sta     $BD00,y
+        sta     $BE00,y
+        iny
+        bne     loopb
+        ldy     #$3F
+tailb:
+        sta     $BF00,y
+        dey
+        bpl     tailb
         rts
 .endproc
 

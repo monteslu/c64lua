@@ -31,9 +31,13 @@
 #define CIA2_DDRA   0xDD02
 #define SID_BASE    0xD400
 
-static unsigned char *const bitmap = (unsigned char *)C64_BITMAP_BASE;
-static unsigned char *const screen = (unsigned char *)C64_SCREEN_BASE;
+/* Draw target = the HIDDEN buffer. bitmap/screen are MUTABLE pointers that the
+ * endframe swap re-points at buffer A or B. colram is const ($D800, shared HW).
+ * draw_b = 1 when the current draw target is buffer B (drives cls dispatch). */
+static unsigned char *bitmap = (unsigned char *)C64_BITMAP_A;
+static unsigned char *screen = (unsigned char *)C64_SCREEN_A;
 static unsigned char *const colram = (unsigned char *)C64_COLOR_RAM;
+static unsigned char draw_b = 0;
 
 /* current draw color (0-15), camera offset, clash counter */
 static unsigned char cur_color = 1;
@@ -108,19 +112,25 @@ void c64_init(void) {
      * the KERNAL out, so no IRQ jumps through the now-invalid $FFFE RAM vector. */
     c64_irq_off();
 
-    /* VIC bank 3 ($C000-$FFFF): CIA2 PRA bits 0-1 = %00 (inverted) -> bank 3. */
+    /* Double buffer: buffer A = VIC bank 3 (CIA2 bits %00), buffer B = bank 1
+     * (CIA2 bits %10). CIA2 bank bits are INVERTED: value X -> bank (3-X), so
+     * bank 3 = %00 = 0x00, bank 1 = %10 = 0x02. Both use VIC_MEMORY=$08 (screen
+     * at bank offset 0, bitmap at bank offset $2000), so the only per-frame flip
+     * is CIA2 PRA bits 0-1. Start SHOWING buffer A while the game draws into
+     * hidden buffer B. Buffer B ($4000-$7FFF) is pure RAM (no ROM overlay), so
+     * CPU read-modify-write of its bitmap is correct with no banking tricks. */
     POKE(CIA2_DDRA) |= 0x03;          /* bank-select bits are outputs */
-    POKE(CIA2_PRA) = (POKE(CIA2_PRA) & 0xFC) | 0x00;
+    POKE(CIA2_PRA) = (POKE(CIA2_PRA) & 0xFC) | 0x00;   /* show A (bank 3) */
 
-    /* Within bank 3: screen matrix at $C000 (offset 0 -> bits 7-4 = 0),
-     * bitmap at $E000 (offset $2000 -> CB13 bit3 = 1). VIC_MEMORY = $08. */
+    /* Within either bank: screen matrix at offset 0, bitmap at offset $2000. */
     POKE(VIC_MEMORY) = 0x08;
 
-    /* Bank the KERNAL out ($01 HIRAM=0) so CPU reads of the bitmap RAM at
-     * $E000 hit RAM, not ROM (the VIC always reads the RAM beneath). Keep I/O
-     * visible (CHAREN=1) for the $D000-$DFFF registers + raster poll. We use no
-     * KERNAL after this. LORAM=1 keeps BASIC mapped harmlessly. $01 = $35:
-     * %00110101 -> LORAM=1 (BASIC in), HIRAM=0 (KERNAL out), CHAREN=1 (I/O in). */
+    /* Bank the KERNAL out ($01 HIRAM=0) so CPU reads/writes of buffer A's bitmap
+     * RAM at $E000 hit RAM, not ROM. Buffer B lives in bank 1 ($4000-$7FFF),
+     * which is plain RAM with no ROM overlay, so BASIC stays mapped (LORAM=1,
+     * harmless). Keep I/O visible (CHAREN=1) for $D000-$DFFF + the raster poll.
+     * $01 = $35: %00110101 -> LORAM=1 (BASIC in), HIRAM=0 (KERNAL out),
+     * CHAREN=1 (I/O in). The VIC reads the RAM beneath the KERNAL regardless. */
     POKE(CPU_PORT) = 0x35;
 
     /* enable bitmap mode (CTRL1 bit5) + multicolor (CTRL2 bit4) + display on. */
@@ -131,17 +141,26 @@ void c64_init(void) {
     POKE(VIC_BG0) = 0;                /* shared background = black */
     bg_color = 0;
 
-    c64_cls(0);
+    /* Prime BOTH buffers with a clear so the very first shown frame (buffer A,
+     * which the game does NOT draw into first) is a clean screen, and buffer B
+     * starts clean too. Draw target starts at B (hidden); we cls B here, then
+     * cls A, then leave the target on B for the game's first _draw. */
+    draw_b = 0; bitmap = (unsigned char *)C64_BITMAP_A; screen = (unsigned char *)C64_SCREEN_A;
+    c64_cls(0);                       /* clear buffer A (the first shown frame) */
+    draw_b = 1; bitmap = (unsigned char *)C64_BITMAP_B; screen = (unsigned char *)C64_SCREEN_B;
+    c64_cls(0);                       /* clear buffer B (first drawn) + leave target here */
 
-    /* default MOB sprite data: a solid 24x21 square at $C800 (bank 3), pointer
-     * value ($C800-$C000)/64 = 32. All 8 sprite pointers ($C3F8-$C3FF) point at
-     * it, so spr(n,...) shows a solid block until a sheet importer supplies art.
-     * Set AFTER cls (screen_clear preserves $C3E8-$C3FF, so pointers survive
+    /* default MOB sprite data: a solid 24x21 square, replicated into BOTH banks
+     * at bank offset $0800 (bank 3 -> $C800, bank 1 -> $4800), pointer value
+     * $0800/64 = 32. All 8 sprite pointers in BOTH screens ($C3F8 / $43F8) point
+     * at it, so spr(n,...) shows a solid block in whichever buffer is displayed.
+     * Set AFTER cls (screen_clear preserves $x3E8-$x3FF, so pointers survive
      * every later cls too). */
     {
-        unsigned char *sd = (unsigned char *)0xC800;
-        for (i = 0; i < 63; ++i) sd[i] = 0xFF;
-        for (i = 0; i < 8; ++i) POKE(0xC3F8 + i) = 32;
+        unsigned char *sda = (unsigned char *)0xC800;
+        unsigned char *sdb = (unsigned char *)0x8800;
+        for (i = 0; i < 63; ++i) { sda[i] = 0xFF; sdb[i] = 0xFF; }
+        for (i = 0; i < 8; ++i) { POKE(0xC3F8 + i) = 32; POKE(0x83F8 + i) = 32; }
     }
     POKE(0xD015) = 0;                 /* all sprites disabled until spr() enables */
 }
@@ -150,9 +169,27 @@ void c64_p8_fps30(void) { /* frame pacing is a raster poll; 30fps = caller loop 
 
 void c64_endframe(void) {
     /* wait for the raster to pass the visible area (line 250), a reliable
-     * per-frame tick (no vblank IRQ by default). */
+     * per-frame tick (no vblank IRQ by default). The flip happens here, off the
+     * visible area, so the VIC never fetches a half-drawn buffer -> no tearing. */
     while (POKE(0xD012) < 250) { }
     while (POKE(0xD012) >= 250) { }
+
+    /* Double-buffer flip: the game just finished drawing into the HIDDEN buffer
+     * (draw_b). Show it (point CIA2 at its bank), then swap the draw target to
+     * the other buffer for the next frame. D018 stays $08; only CIA2 bits flip.
+     * CIA2 %00 -> bank 3 (buffer A), %10 (0x02) -> bank 1 (buffer B). */
+    if (draw_b) {
+        POKE(CIA2_PRA) = (POKE(CIA2_PRA) & 0xFC) | 0x01;   /* show B (bank 2) */
+        draw_b = 0;
+        bitmap = (unsigned char *)C64_BITMAP_A;
+        screen = (unsigned char *)C64_SCREEN_A;
+    } else {
+        POKE(CIA2_PRA) = (POKE(CIA2_PRA) & 0xFC) | 0x00;   /* show A */
+        draw_b = 1;
+        bitmap = (unsigned char *)C64_BITMAP_B;
+        screen = (unsigned char *)C64_SCREEN_B;
+    }
+
     c64_time_tick();
 #ifdef C64_BENCH
     /* bench: a game-loop counter in color RAM $DBFF (last cell, off-screen). One
@@ -179,10 +216,15 @@ void c64_cls(int c) {
 #endif
     bg_color = k;
     POKE(VIC_BG0) = k;
-    c64_bitmap_clear(0x00);           /* asm: all bitmap pixels -> 00 = bg */
-    /* reset per-cell color slots to "empty" (all == bg so cell_slot sees them
-     * free). Both fills are unrolled asm (c64_clear.s). */
-    c64_screen_clear((unsigned char)((k << 4) | k));
+    /* clear the HIDDEN draw-target buffer (A or B). Both fills are unrolled asm
+     * (c64_clear.s). Color RAM is shared hardware, cleared once either way. */
+    if (draw_b) {
+        c64_bitmap_clear_b(0x00);
+        c64_screen_clear_b((unsigned char)((k << 4) | k));
+    } else {
+        c64_bitmap_clear(0x00);
+        c64_screen_clear((unsigned char)((k << 4) | k));
+    }
     c64_color_clear(k);
 #ifdef C64_BENCH
     POKE(VIC_BORDER) = 0;             /* black border: white band height = cls time */

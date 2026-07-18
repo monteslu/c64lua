@@ -171,7 +171,7 @@ async function runBuild(entry, opts) {
   const absEntry = path.resolve(entry);
   let res;
   try {
-    res = await build(absEntry, { out: opts.outPath, dev: opts.dev, num8: opts.num8 }, env);
+    res = await build(absEntry, { out: opts.outPath, dev: opts.dev, num8: opts.num8, bench: opts.bench }, env);
   } catch (e) {
     fail(e?.message ?? String(e));
   }
@@ -209,6 +209,7 @@ if (cmd === "build") {
     { name: "--d64", key: "d64Path", value: true },
     { name: "--dev", key: "dev" },
     { name: "--num8", key: "num8" },
+    { name: "--bench", key: "bench" },
   ]);
   if (!f.entry) fail("usage: c64lua build <main.lua> [-o game.prg] [--d64 game.d64] [--dev] [--num8]");
   await runBuild(f.entry, f);
@@ -219,6 +220,7 @@ if (cmd === "build") {
     { name: "--d64", key: "d64Path", value: true },
     { name: "--dev", key: "dev" },
     { name: "--num8", key: "num8" },
+    { name: "--bench", key: "bench" },
   ]);
   if (!f.entry) fail("usage: c64lua run <main.lua|game.prg>");
   let prg;

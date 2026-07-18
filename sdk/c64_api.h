@@ -52,19 +52,37 @@ int  c64_print_cur_str(const char *s, int c);
 /* --- SID sfx (compiled effect table; hardware ADSR) --- */
 void c64_sfx(int n, int ch);
 
-/* --- the asm cls engines (c64_clear.s) --- */
-void c64_bitmap_clear(unsigned char byteval);   /* fill the 8000-byte bitmap */
-void c64_screen_clear(unsigned char byteval);   /* fill screen RAM $C000 */
-void c64_color_clear(unsigned char byteval);    /* fill color RAM $D800 */
+/* --- the asm cls engines (c64_clear.s) ---
+ * Double-buffered: buffer A lives in VIC bank 3 ($C000 screen / $E000 bitmap),
+ * buffer B in VIC bank 2 ($8000 screen / $A000 bitmap). c64_cls() dispatches to
+ * the pair that targets the HIDDEN buffer. Color RAM ($D800) is shared hardware. */
+void c64_bitmap_clear(unsigned char byteval);   /* fill bitmap A $E000-$FF3F */
+void c64_screen_clear(unsigned char byteval);   /* fill screen A $C000-$C3E7 */
+void c64_bitmap_clear_b(unsigned char byteval); /* fill bitmap B $A000-$BF3F */
+void c64_screen_clear_b(unsigned char byteval); /* fill screen B $8000-$83E7 */
+void c64_color_clear(unsigned char byteval);    /* fill color RAM $D800 (shared) */
 
 /* --- per-cell color allocator diagnostics (dev builds) ---
  * A 4th distinct color in a 4x8 cell evicts to the nearest existing color and
  * (on C64_DEV builds) flashes the border + bumps c64_clash_count. */
 extern unsigned int c64_clash_count;
 
-/* --- bitmap + screen bases (VIC bank 3, $C000-$FFFF; bitmap under KERNAL) --- */
-#define C64_BITMAP_BASE 0xE000
-#define C64_SCREEN_BASE 0xC000
-#define C64_COLOR_RAM   0xD800
+/* --- double-buffer addresses ---
+ * Buffer A = VIC bank 3 ($C000-$FFFF): screen $C000, bitmap $E000 (RAM under
+ *   KERNAL; the classic trick, KERNAL banked out so CPU read/write hit RAM).
+ * Buffer B = VIC bank 2 ($8000-$BFFF): screen $8000 (RAM), bitmap $A000.
+ * Both use VIC_MEMORY=$08; the only per-frame flip is CIA2 PRA bits 0-1
+ * (inverted: %00 -> bank 3 / buffer A, %01 -> bank 2 / buffer B). The draw
+ * target is always the HIDDEN buffer; endframe shows it then swaps. Color RAM
+ * ($D800) is fixed hardware, shared by both buffers (fine under full redraw).
+ * Code + data live in $0801-$7FFF (buffer B starts at $8000). */
+#define C64_BITMAP_A  0xE000
+#define C64_SCREEN_A  0xC000
+#define C64_BITMAP_B  0xA000
+#define C64_SCREEN_B  0x8000
+#define C64_COLOR_RAM 0xD800
+/* legacy single-buffer aliases (default draw target = A at init) */
+#define C64_BITMAP_BASE C64_BITMAP_A
+#define C64_SCREEN_BASE C64_SCREEN_A
 
 #endif
