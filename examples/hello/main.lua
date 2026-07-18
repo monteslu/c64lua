@@ -41,15 +41,20 @@ function _init()
   -- (a runtime variable) skips the bake, so use the C64 index directly. See
   -- docs/ASSETS.md for the full P8<->C64 color table.
   disc(80, 96, 22, 7)          -- yellow head (C64 index 7), round on screen
-  disc(72, 92, 5, 6)           -- left eye (C64 blue)
-  disc(88, 92, 5, 6)           -- right eye (C64 blue)
-  -- smile: a shallow upward arc of pixels
-  local i = -8
-  while i <= 8 do
-    pset(80 + i, 106 - flr((i * i) / 12), 6)
+  -- eyes: small, high on the face, close to center
+  disc(74, 89, 3, 0)           -- left eye (C64 black)
+  disc(86, 89, 3, 0)           -- right eye (C64 black)
+  -- smile: a bold U-curve. y grows DOWNWARD, so to make the mouth's middle sit
+  -- LOW and its ends curl UP (a smile, not a frown), the middle needs the
+  -- LARGEST y: y = base + (k - i*i)/k pushes the center down and lifts the ends.
+  local i = -9
+  while i <= 9 do
+    local y = 104 - flr((i * i) / 11)   -- ends higher (small y), middle lower
+    pset(80 + i, y, 0)
+    pset(80 + i, y + 1, 0)              -- second row = a bolder line
     i += 1
   end
-  print("hello c64", 58, 132, 7)   -- white
+  print("hello c64", 58, 134, 7)   -- white
 end
 
 function _draw()
