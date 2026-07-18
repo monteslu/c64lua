@@ -1,6 +1,6 @@
 # c64lua
 
-[![npm version](https://img.shields.io/npm/v/c64lua.svg)](https://www.npmjs.com/package/c64lua) [![npm downloads](https://img.shields.io/npm/dm/c64lua.svg)](https://www.npmjs.com/package/c64lua)
+[![npm version](https://img.shields.io/npm/v/c64lua.svg)](https://www.npmjs.com/package/c64lua)
 
 Write PICO-8-flavored Lua, get a Commodore 64 `.prg` / `.d64`.
 
@@ -12,17 +12,47 @@ autostart `.d64` disk image, the format the new **Commodore 64 Ultimate** hardwa
 and the homebrew/demo scene load. No interpreter, no VM: your Lua becomes native
 6502 machine code. No native compiler or emulator to install, either.
 
+## Your first game
+
+This is a complete C64 game. No assets, no boilerplate - one `main.lua`:
+
 ```lua
-function _init()
-  cls(0)
-  circfill(80, 96, 20, 10)     -- a yellow smiley
-  circfill(72, 90, 3, 6)
-  circfill(88, 90, 3, 6)
-  print("hello c64", 58, 140, 7)
+function _init()                  -- draw the scene once
+  cls(0)                          -- black background
+  circfill(80, 96, 22, 10)        -- head: a yellow circle
+  circfill(74, 90, 3, 0)          -- left eye: black
+  circfill(86, 90, 3, 0)          -- right eye
+  circ(80, 100, 12, 0)            -- mouth: a black arc
+  print("hello c64", 58, 132, 7)  -- white text
 end
+
+function _draw() end              -- static picture; nothing to redraw per frame
 ```
 
-![hello c64](examples/hello/screenshot.png)
+Build it and play it in a window:
+
+```sh
+npx c64lua run examples/hello/main.lua
+```
+
+<p align="center">
+  <img src="examples/hello/screenshot.png" width="480" alt="hello c64: a yellow smiley face on a black screen">
+</p>
+
+Or build the distributable - a `.prg` and an autostart `.d64` disk image:
+
+```sh
+npx c64lua build examples/hello/main.lua -o hello.prg --d64 hello.d64
+```
+
+That's the whole loop: write `main.lua`, `run` it, ship the `.d64`. Load the
+disk on a real C64 (or the Ultimate) with `LOAD"*",8,1 : RUN`.
+
+> **One C64 wrinkle:** the multicolor pixel is 2:1 (double-wide), so a plain
+> `circfill` reads a touch wide on screen. The shipped `examples/hello/main.lua`
+> adds a tiny integer-only `disc()` helper (halve each span's x-extent) so the
+> smiley in the screenshot above is perfectly round - see
+> [docs/DIFFERENCES.md](docs/DIFFERENCES.md) for the fat-pixel details.
 
 ## Why the C64
 
@@ -47,23 +77,25 @@ and the platform realities in [docs/DIFFERENCES.md](docs/DIFFERENCES.md).
 - Screenshots in this repo are integer-scaled (2x = 640 x 400) captures of the
   real emulator output, never resampled.
 
-## Install & build
+## Build options & requirements
+
+Start your own game by copying an example, then build with these flags:
 
 ```sh
-npm install
-npx c64lua build main.lua -o game.prg --d64 game.d64
+npx c64lua build mygame/main.lua -o game.prg --d64 game.d64
+# --dev     attribute-clash border flash + counter diagnostics
+# --num8    8.8 fixed point (smaller/faster math, less range)
 ```
 
-- `build main.lua -o game.prg` produces the C64 `.prg`.
-- `--d64 game.d64` wraps it into an autostart 1541 disk image (the headline
-  distributable: `LOAD"*",8,1 : RUN`, and what the C64 Ultimate boots).
-- `--dev` enables the attribute-clash border flash + counter diagnostics.
-- `--num8` uses 8.8 fixed point (smaller/faster, less range).
+- `-o game.prg` produces the C64 `.prg`; `--d64 game.d64` also wraps it into an
+  autostart 1541 disk image (`LOAD"*",8,1 : RUN`, the format the C64 Ultimate
+  and the demo scene load).
+- `npx c64lua run mygame/main.lua` builds and plays it in a window over the
+  bundled VICE core (needs the optional `@kmamal/sdl`, pulled by `npm install`).
 
-The cc65 toolchain (compiler + `c64.lib` + linker config) is bundled as WASM via
-`romdev-toolchain-cc65` — zero native tools required. `c64lua run main.lua`
-builds and plays it in a window over the bundled VICE core (needs the optional
-`@kmamal/sdl`).
+**Requirements:** [Node.js](https://nodejs.org/) **24+**, and nothing else -
+`npm install` brings the cc65 toolchain (compiler + `c64.lib` + linker config)
+as WebAssembly via `romdev-toolchain-cc65`. No native compiler, no VICE install.
 
 ## The Lua dialect
 
