@@ -33,9 +33,16 @@ function disc(cx, cy, r, col)
   end
 end
 
-function _init()
+-- _draw() runs every frame. This scene is static, so we draw it once behind a
+-- guard: re-drawing a full 160x200 bitmap every frame is too slow at ~1 MHz and
+-- would tear (you'd see it mid-redraw). Draw once, let it hold.
+local drawn = 0
+
+function _draw()
+  if (drawn == 1) then return end
+  drawn = 1
   cls(0)                       -- black background
-  -- NOTE: colors are passed as RAW C64 indices here (7=yellow, 6=blue, 2=red),
+  -- NOTE: colors are passed as RAW C64 indices here (7=yellow, 6=blue, 0=black),
   -- NOT PICO-8 indices. The P8->C64 bake only fires on a color LITERAL handed
   -- straight to a draw verb; routing a color through disc()'s `col` parameter
   -- (a runtime variable) skips the bake, so use the C64 index directly. See
@@ -55,8 +62,4 @@ function _init()
     i += 1
   end
   print("hello c64", 58, 134, 7)   -- white
-end
-
-function _draw()
-  -- static scene; nothing to redraw each frame.
 end

@@ -2,8 +2,9 @@
 #include "c64_api.h"
 
 static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col);
-static void lcl__init(void);
 static void lcl__draw(void);
+
+int lcl_drawn = 0;
 
 static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col)
 {
@@ -28,8 +29,12 @@ static void lcl_disc(int lcl_cx, int lcl_cy, int lcl_r, int lcl_col)
     }
 }
 
-static void lcl__init(void)
+static void lcl__draw(void)
 {
+    if ((lcl_drawn == 1)) {
+        return;
+    }
+    lcl_drawn = 1;
     c64_cls(0);
     lcl_disc(80, 96, 22, 7);
     lcl_disc(74, 89, 3, 0);
@@ -46,14 +51,9 @@ static void lcl__init(void)
     }
 }
 
-static void lcl__draw(void)
-{
-}
-
 void main(void)
 {
     c64_init();
-    lcl__init();
     for (;;) {
         c64_update_inputs();
         lcl__draw();

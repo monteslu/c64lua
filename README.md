@@ -14,10 +14,17 @@ and the homebrew/demo scene load. No interpreter, no VM: your Lua becomes native
 
 ## Your first game
 
-This is a complete C64 game. No assets, no boilerplate - one `main.lua`:
+This is a complete C64 game. No assets, no boilerplate - one `main.lua`.
+`_draw()` runs every frame; this scene is static, so we draw it once and skip
+the rest (redrawing a full 160x200 bitmap every frame is too slow at ~1 MHz -
+see the perf model in [docs/CHEATSHEET.md](docs/CHEATSHEET.md)):
 
 ```lua
-function _init()                  -- draw the scene once
+local drawn = 0
+
+function _draw()                  -- runs every frame
+  if (drawn == 1) then return end -- static scene: draw it just once
+  drawn = 1
   cls(0)                          -- black background
   circfill(80, 96, 22, 10)        -- head: a yellow circle
   circfill(74, 90, 3, 0)          -- left eye: black
@@ -25,8 +32,6 @@ function _init()                  -- draw the scene once
   circ(80, 100, 12, 0)            -- mouth: a black arc
   print("hello c64", 58, 132, 7)  -- white text
 end
-
-function _draw() end              -- static picture; nothing to redraw per frame
 ```
 
 Build it and play it in a window:
@@ -36,7 +41,7 @@ npx c64lua run examples/hello/main.lua
 ```
 
 <p align="center">
-  <img src="examples/hello/screenshot.png" width="480" alt="hello c64: a yellow smiley face on a black screen">
+  <img src="https://raw.githubusercontent.com/monteslu/c64lua/main/examples/hello/screenshot.png" width="480" alt="hello c64: a yellow smiley face on a black screen">
 </p>
 
 Or build the distributable - a `.prg` and an autostart `.d64` disk image:
