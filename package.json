@@ -1,6 +1,6 @@
 {
   "name": "c64lua",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Write PICO-8-flavored Lua, get a Commodore 64 .prg / .d64. The C64 member of the luacretro Lua-to-C console SDK family.",
   "type": "module",
   "license": "MIT",
@@ -9,10 +9,11 @@
     "c64lua": "bin/c64lua.js"
   },
   "exports": {
-    "./compiler/index.js": "./compiler/index.js",
-    "./compiler/builtins.js": "./compiler/builtins.js",
-    "./compiler/c64_palette.js": "./compiler/c64_palette.js",
+    ".": "./compiler/index.js",
+    "./compiler/*": "./compiler/*",
     "./build": "./compiler/build.js",
+    "./bin/*": "./bin/*",
+    "./sdk/*": "./sdk/*",
     "./package.json": "./package.json"
   },
   "engines": {
