@@ -20,7 +20,7 @@
     "node": ">=24"
   },
   "dependencies": {
-    "luacretro": "^0.1.0",
+    "luacretro": "^0.1.1",
     "romdev-core-runner": "0.1.0",
     "romdev-core-vice": "^0.1.0",
     "romdev-toolchain-cc65": "^0.1.3"
