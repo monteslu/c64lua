@@ -129,6 +129,15 @@ integer-typed locals inferred automatically. See
 - [DIFFERENCES.md](docs/DIFFERENCES.md) — 2:1 fat pixels + per-cell attribute clash, honestly.
 - [ASSETS.md](docs/ASSETS.md) — the P8↔C64 color mapping + PNG import.
 
+## Real PICO-8 carts
+
+c64lua compiles a PICO-8-flavored Lua dialect, not arbitrary PICO-8 carts.
+luacretro 0.2.0 adds a second tier that compiles unmodified `.p8` carts
+(tables, closures, coroutines, strings), but it needs a 32-bit C compiler
+with 64-bit integers and far more RAM than the C64 has (64 KB shared with the screen and the program), so it
+targets the GBA (gbalua), the Genesis (mdlua) and sync32 instead. See
+luacretro's DYNAMIC.md.
+
 ## License
 
 MIT. No AI attribution. See [LICENSE](LICENSE).
